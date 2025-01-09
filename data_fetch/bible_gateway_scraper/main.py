@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# Author: Victor V. R. Matos (@vvrmatos)
+# Description: This script creates a directory structure for books of the Bible,
+# fetches chapter content from the Bible Gateway Bible website, and saves verses as text files.
+# License: CC0 1.0 Universal
 
 import os
 import re
@@ -99,8 +105,8 @@ def main():
                                 file.write(cleaned_verse)
                             else:
                                 file.write(cleaned_verse + "\n")
-                    else:
-                        print(f"File {file_name} is not empty. Skipping.")
+                else:
+                    print(f"File {file_name} is not empty. Skipping.")
             else:
                 print(f"No verses found for {book.name} Chapter {chapter}!")
 
