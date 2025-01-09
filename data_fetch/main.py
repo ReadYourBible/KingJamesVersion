@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 
 import os
+import re
 import sys
+
+from time import sleep
 from pathlib import Path
 from collections import namedtuple
 from bible_gateway_scraper import SessionManager, VerseExtractor
@@ -42,7 +45,8 @@ def create_book_dir(books: Book):
     for book in books:
         book_number = books.index(book) + 1
         book_number = str(book_number) if book_number >= 10 else "0" + str(book_number)        
-        os.makedirs(root_path / (book_number + "-" + f"{book.name.lower().replace(' ', '-')}"), exist_ok=True)
+        book_dir_name = f"{book_number}-{book.name.lower().replace(' ', '-')}"
+        os.makedirs(root_path / book_dir_name, exist_ok=True)
 
 
 def main():    
@@ -52,13 +56,21 @@ def main():
     create_book_dir(books)
 
     for book in books:
-        
+
+        book_number = books.index(book) + 1
+        book_number = f"0{book_number}" if book_number < 10 else str(book_number)
+        book_name_cleaned = book.name.lower().replace(" ", "-")
+        book_dir_name = f"{book_number}-{book_name_cleaned}"
+
         for chapter in range(1, book.chapters + 1):
+            chapter_number = f"0{chapter}" if chapter < 10 else str(chapter)
+            file_name = f"{book_name_cleaned}-{chapter_number}.txt"
+            print(file_name)
     
             book_name_encoded = book.name.replace(" ", "%20")
-            path = f"/passage/?search={book_name_encoded}%20{chapter}&version=KJV"
+            page_path = f"/passage/?search={book_name_encoded}%20{chapter}&version=KJV"
             
-            page_content = session_manager.fetch_page(path)
+            page_content = session_manager.fetch_page(page_path)
             
             # Extract verses
             extractor = VerseExtractor(page_content)
@@ -73,10 +85,22 @@ def main():
                     
                 verses.extend(extractor.extract_all_verses(container))
                 
+
                 # Process the verses (e.g., save to file, print, etc.)
                 print(f"Book: {book.name}, Chapter: {chapter}")
-                for verse in verses:
-                    print(verse)
+                file_path = root_path / book_dir_name / file_name
+                if not file_path.exists() or file_path.stat().st_size == 0:
+                    for verse in verses:
+                        cleaned_verse = re.sub(r"^\d+\s*", "", verse)
+                        print(cleaned_verse)
+                        
+                        with open(file_path, "a") as file:
+                            if verse == verses[-1]:
+                                file.write(cleaned_verse)
+                            else:
+                                file.write(cleaned_verse + "\n")
+                    else:
+                        print(f"File {file_name} is not empty. Skipping.")
             else:
                 print(f"No verses found for {book.name} Chapter {chapter}!")
 
